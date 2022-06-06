@@ -1,0 +1,53 @@
+#!/usr/bin/env sh
+#
+# CIS-LBK Cloud Team Built Recommendation Function
+# ~/CIS-LBK/functions/fct/nix_ensure_permissions_issue_configured.sh
+# 
+# Name                Date       Description
+# ------------------------------------------------------------------------------------------------
+# Eric Pinnell       09/21/20    Recommendation "Ensure permissions on /etc/issue are configured"
+#
+nix_ensure_permissions_issue_configured()
+{
+	# Ensure permissions on /etc/issue are configured
+	echo
+	echo \*\*\*\* Ensure\ permissions\ on\ /etc/issue\ are\ configured | tee -a "$LOG" 2>> "$ELOG"
+	l_test=""
+	l_perms="$(ls -l /etc/issue | awk '{print $1}')
+
+	nix_ensure_permissions_issue_configured_chk()
+	{
+		if [ "$l_perms" = "-rw-r--r--" ]; then
+			l_test="passed"
+		fi
+	}
+
+	nix_ensure_permissions_issue_configured_fix()
+	{
+		chmod -t,u+r+w-x-s,g+r-w-x-s,o+r-w-x /etc/issue
+	}
+
+	nix_ensure_permissions_issue_configured_chk
+	if [ -z "$l_test" ]; then
+		nix_ensure_permissions_issue_configured_fix
+		nix_ensure_permissions_issue_configured_chk
+		test -n "$l_test" && l_test="remediated"
+	fi
+
+	# Set return code and return
+	case "$l_test" in
+		passed)
+			echo "Permissions on /etc/issue were correctly configured" | tee -a "$LOG" 2>> "$ELOG"
+			return "${XCCDF_RESULT_PASS:-101}"
+			;;
+		remediated)
+			echo "Permissions on /etc/issue have been set correctly" | tee -a "$LOG" 2>> "$ELOG"
+			return "${XCCDF_RESULT_PASS:-103}"
+			;;
+		*)
+			echo "Permissions on /etc/issue are wrong and need to be manually set" | tee -a "$LOG" 2>> "$ELOG"
+			return "${XCCDF_RESULT_FAIL:-102}"
+			;;
+	esac	
+		
+}
